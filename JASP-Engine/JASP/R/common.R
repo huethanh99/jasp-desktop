@@ -2267,7 +2267,7 @@ openGrDevice <- function(...) {
   #if (jaspResultsCalledFromJasp())
   #  svglite::svglite(...)
   #else
-  grDevices::png(..., type = ifelse(Sys.info()["sysname"] == "Darwin", "quartz", "cairo"))
+  grDevices::png(..., type = "cairo") #ifelse(Sys.info()["sysname"] == "Darwin", "quartz", "cairo"))
 }
 
 .writeImage <- function(width=320, height=320, plot, obj = TRUE, relativePathpng = NULL) {
@@ -2316,7 +2316,7 @@ openGrDevice <- function(...) {
       height    = height,
       bg        = backgroundColor,
       res       = 72 * (ppi / 96),
-      type      = ifelse(Sys.info()["sysname"] == "Darwin", "quartz", "cairo"),
+      type      = "cairo", #ifelse(Sys.info()["sysname"] == "Darwin", "quartz", "cairo"),
       limitsize = FALSE # only necessary if users make the plot ginormous.
     )
 
@@ -2381,7 +2381,48 @@ saveImage <- function(plotName, format, height, width)
   
   if (format == "pptx") {
 
+<<<<<<< HEAD
     error <- try(.saveImageAsPPTX(plt, relativePath))
+=======
+  error <- try({
+
+    # Get file size in inches by creating a mock file and closing it
+    pngMultip <- .fromRCPP(".ppi") / 96
+    png(
+      filename = "dpi.png",
+      width = width * pngMultip,
+      height = height * pngMultip,
+      res = 72 * pngMultip
+    )
+    insize <- dev.size("in")
+    dev.off()
+
+    # Even though OSX is usually cairo able, the cairo devices should not be used as plot fonts are not scaled well.
+    # On the other hand, Windows should use a cairo (eps/pdf) device as the standard devices use a wrong R_HOME for some reason.
+    # Consequently on Windows you will get encoding/font errors because the devices cannot find their resources.
+	#if (capabilities("aqua"))
+	 # type <- "quartz"
+	#else
+	if (capabilities("cairo"))
+      type <- "cairo"
+    else
+      type <- "Xlib"
+
+    # Open correct graphics device
+    if (format == "eps") {
+
+      if (type == "cairo")
+        device <- grDevices::cairo_ps
+      else
+        device <- grDevices::postscript
+
+      device(
+        relativePath,
+        width = insize[1],
+        height = insize[2],
+        bg = backgroundColor
+      )
+>>>>>>> fb000182d... Don't use quartz at all
 
   } else {
     
